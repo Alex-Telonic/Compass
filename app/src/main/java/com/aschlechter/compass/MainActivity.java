@@ -5,7 +5,13 @@ import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
+import android.bluetooth.le.ScanFilter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -14,6 +20,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Handler;
+import android.os.ParcelUuid;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -27,9 +35,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener, BluetoothAdapter.LeScanCallback {
     private static final String TAG = "MainActivity";
 
 
@@ -37,9 +47,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final UUID VIBRATION_SERVICE = UUID.fromString("713d0000-503e-4c75-ba94-3148f18d941e");
     private static final UUID VIBRATION_CHARACTERISTIC = UUID.fromString("713d0003-503e-4c75-ba94-3148f18d941e");
     private static final int REQUEST_ENABLE_BT = 1;
+    private static final String TECO_WEARABLE_2 = "EF:EA:F0:C2:F5:5E";
+    public static final int STATE_CONNECTED = 2;
+    public static final int STATE_DISCONNECTED = 0;
+
 
     private BluetoothAdapter bluetoothAdapter;
     private SparseArray<BluetoothDevice> mDevices;
+    private Handler handler = new Handler();
     private BluetoothGatt mConnectedGatt;
     //private ProgressDialog mProgress;
 
@@ -66,8 +81,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         txt_compass = (TextView) findViewById(R.id.txt_azimuth);
 
 
-
-
         /*View.OnClickListener startListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -75,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         };
         */
-
+        mDevices = new SparseArray<BluetoothDevice>();
         // Initializes Bluetooth adapter.
         final BluetoothManager bluetoothManager =
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -94,12 +107,61 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_scan, menu);
 
+        for (int i=0; i < mDevices.size(); i++) {
+            BluetoothDevice device = mDevices.valueAt(i);
+            menu.add(0, mDevices.keyAt(i), 0, device.getName());
+        }
+
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_scan:
+                mDevices.clear();
+                //start();
+                startScan();
+                return true;
+                default:
+                    BluetoothDevice device = mDevices.get(item.getItemId());
+                    Log.i(TAG, "Connecting to" + device.getName());
+                    mConnectedGatt = device.connectGatt(this, false, gattCallback);
+                    //mConnectedGatt = device.connectGatt(this, true, mGattCallback);
+        }
+
         return super.onOptionsItemSelected(item);
+    }
+
+    private Runnable StopRunnable = new Runnable() {
+        @Override
+        public void run() {
+            MainActivity.this.stopScan();
+        }
+    };
+    private Runnable StartRunnable = new Runnable() {
+        @Override
+        public void run() {
+            MainActivity.this.stopScan();
+        }
+    };
+
+    private void startScan() {
+        // Stops scanning after 2,5 seconds.
+        final long SCAN_PERIOD = 10000;
+        Log.i(TAG, "startScan: ");
+
+
+
+
+        bluetoothAdapter.startLeScan(this);
+        handler.postDelayed(StopRunnable, SCAN_PERIOD);
+
+
+    }
+
+    private void stopScan() {
+        bluetoothAdapter.stopLeScan(this);
     }
 
     public void stop() {
@@ -138,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Toast.makeText(this, "No LE Support", Toast.LENGTH_SHORT);
         }
 
-        start();
+        //start();
     }
 
     private void start() {
@@ -197,10 +259,33 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mAzimuth = Math.round(mAzimuth);
         compass_img.setRotation(-mAzimuth);
 
+        /*
+        if (mConnectedGatt != null) {
+            //BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
+            //BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
+            System.out.println(mConnectedGatt.getServices().toString());
+        }
+        */
+        BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
+        Log.i(TAG, "onSensorChanged: new value set");
+        byte[] array = hexStringToByteArray("0000FF00");
+        byte[] array1 = {-128, -128, -128, -128};
+        //characteristic.setValue(42949672,BluetoothGattCharacteristic.FORMAT_UINT16, 0);
+        //characteristic.setValue(new byte[]{0x11, 0x11, 0x11, 0x11});
+
+
+        //characteristic.setValue(255,BluetoothGattCharacteristic.FORMAT_UINT16, 1);
+        //characteristic.setValue(16777215,BluetoothGattCharacteristic.FORMAT_UINT16, 1);
+        System.out.println("Value is: " + characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16,1));
+
         String where = "NW";
+
 
         if (mAzimuth >= 350 || mAzimuth <= 10)
             where = "N";
+
+            //characteristic.setValue(array);
         if (mAzimuth < 350 && mAzimuth > 280)
             where = "NW";
         if (mAzimuth <= 280 && mAzimuth > 260)
@@ -225,4 +310,69 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
+
+
+    @Override
+    public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+
+        //Log.i(TAG, "New LE Device: " + device.getName() + " @ " + rssi);
+        if (device.getName() != null) {
+            if (device.getAddress().equals(TECO_WEARABLE_2)) {
+                mDevices.put(device.hashCode(), device);
+            }
+                //mDevices.put(device.hashCode(), device);
+
+        }
+        invalidateOptionsMenu();
+    }
+
+    private BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicWrite(gatt, characteristic, status);
+        }
+
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            Log.d(TAG, "onConnectionStateChange: Status changed " + newState);
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                Log.i(TAG, "Connected to GATT server.");
+                Log.i(TAG, "Attempting to start service discovery:");
+                mConnectedGatt.discoverServices();
+
+
+                if (mConnectedGatt != null) {
+                    //BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
+                    //BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
+                    //System.out.println("Available Services" + mConnectedGatt.toString());
+                    //System.out.println("Available Services" + mConnectedGatt.getServices().toString());
+                }
+            }
+            else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                Log.i(TAG, "Disconnected from GATT server.");
+                stop();
+            }
+
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(TAG, "Services successful discovered");
+                start();
+            }
+        }
+    };
+
+    public static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
+    }
+
+
 }
