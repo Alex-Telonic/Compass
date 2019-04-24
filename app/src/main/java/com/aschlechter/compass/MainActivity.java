@@ -16,8 +16,11 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -38,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private BluetoothAdapter bluetoothAdapter;
     private SparseArray<BluetoothDevice> mDevices;
     private BluetoothGatt mConnectedGatt;
-    private ProgressDialog mProgress;
+    //private ProgressDialog mProgress;
 
     ImageView compass_img;
     TextView txt_compass;
@@ -62,7 +65,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         compass_img = (ImageView) findViewById(R.id.img_compass);
         txt_compass = (TextView) findViewById(R.id.txt_azimuth);
 
-        
+
+
 
         /*View.OnClickListener startListener = new View.OnClickListener() {
             @Override
@@ -84,6 +88,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         */
 
 
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_scan, menu);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        return super.onOptionsItemSelected(item);
     }
 
     public void stop() {
@@ -115,14 +131,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            finish();
-            return;
+
         }
 
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, "No LE Support", Toast.LENGTH_SHORT);
-            finish();
-            return;
         }
 
         start();
