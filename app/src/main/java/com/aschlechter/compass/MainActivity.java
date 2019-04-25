@@ -219,7 +219,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             mRotationV = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
             haveSensor = mSensorManager.registerListener(this, mRotationV, SensorManager.SENSOR_DELAY_UI);
         }
+
+
+
         Log.d(TAG, "start: finished reading in sensor values");
+
     }
 
 
@@ -266,40 +270,74 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             System.out.println(mConnectedGatt.getServices().toString());
         }
         */
-        BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
-        BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
-        Log.i(TAG, "onSensorChanged: new value set");
-        byte[] array = hexStringToByteArray("0000FF00");
-        byte[] array1 = {-128, -128, -128, -128};
+        //BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
+        //BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
+        //Log.i(TAG, "onSensorChanged: new value set");
+
         //characteristic.setValue(42949672,BluetoothGattCharacteristic.FORMAT_UINT16, 0);
         //characteristic.setValue(new byte[]{0x11, 0x11, 0x11, 0x11});
 
 
         //characteristic.setValue(255,BluetoothGattCharacteristic.FORMAT_UINT16, 1);
         //characteristic.setValue(16777215,BluetoothGattCharacteristic.FORMAT_UINT16, 1);
-        System.out.println("Value is: " + characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16,1));
+        //System.out.println("Value is: " + characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16,1));
+        BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
+
+        byte[] array = hexStringToByteArray("0000FF00");
+        byte[] array1 = {(byte)0x00, (byte)0x00, (byte)0xFF, (byte)0x00};
+        byte[] array0 = {(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00};
+
+
+        //System.out.println("Value is: " + characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16,1));
+        //System.out.println("Value 1 is " + characteristic.getValue().toString());
 
         String where = "NW";
 
 
-        if (mAzimuth >= 350 || mAzimuth <= 10)
+        if (mAzimuth >= 350 || mAzimuth <= 10) {
             where = "N";
+            characteristic.setValue(array);
+            mConnectedGatt.writeCharacteristic(characteristic);
+        }
 
             //characteristic.setValue(array);
-        if (mAzimuth < 350 && mAzimuth > 280)
+        if (mAzimuth < 350 && mAzimuth > 280) {
             where = "NW";
-        if (mAzimuth <= 280 && mAzimuth > 260)
+            characteristic.setValue(array0);
+            mConnectedGatt.writeCharacteristic(characteristic);
+        }
+        if (mAzimuth <= 280 && mAzimuth > 260) {
             where = "W";
-        if (mAzimuth <= 260 && mAzimuth > 190)
+            characteristic.setValue(array0);
+            mConnectedGatt.writeCharacteristic(characteristic);
+        }
+        if (mAzimuth <= 260 && mAzimuth > 190) {
             where = "SW";
-        if (mAzimuth <= 190 && mAzimuth > 170)
+            characteristic.setValue(array0);
+            mConnectedGatt.writeCharacteristic(characteristic);
+        }
+        if (mAzimuth <= 190 && mAzimuth > 170) {
             where = "S";
-        if (mAzimuth <= 170 && mAzimuth > 100)
+            characteristic.setValue(array0);
+            mConnectedGatt.writeCharacteristic(characteristic);
+        }
+
+        if (mAzimuth <= 170 && mAzimuth > 100) {
             where = "SE";
-        if (mAzimuth <= 100 && mAzimuth > 80)
+            characteristic.setValue(array0);
+            mConnectedGatt.writeCharacteristic(characteristic);
+        }
+        if (mAzimuth <= 100 && mAzimuth > 80) {
             where = "E";
-        if (mAzimuth <= 80 && mAzimuth > 10)
+            characteristic.setValue(array0);
+            mConnectedGatt.writeCharacteristic(characteristic);
+        }
+        if (mAzimuth <= 80 && mAzimuth > 10)  {
             where = "NE";
+            characteristic.setValue(array0);
+            mConnectedGatt.writeCharacteristic(characteristic);
+        }
 
 
         txt_compass.setText(mAzimuth + "° " + where);
@@ -330,6 +368,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
+            Log.i(TAG, "onCharacteristicWrite: Value has changed");
         }
 
         @Override
@@ -362,6 +401,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 start();
             }
         }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            super.onCharacteristicChanged(gatt, characteristic);
+        }
+        
+        
     };
 
     public static byte[] hexStringToByteArray(String s) {
