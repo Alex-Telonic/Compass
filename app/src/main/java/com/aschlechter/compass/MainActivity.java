@@ -56,6 +56,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private SparseArray<BluetoothDevice> mDevices;
     private Handler handler = new Handler();
     private BluetoothGatt mConnectedGatt;
+    private BluetoothGattService service;
+    private BluetoothGattCharacteristic characteristic;
+
+
     //private ProgressDialog mProgress;
 
     ImageView compass_img;
@@ -70,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float[] mLastMagnetometer = new float[3];
     private boolean mLastAccelerometerSet = false;
     private boolean mLastMagnetometerSet = false;
+    private String where = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,10 +123,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.menu_disconnect:
+                mConnectedGatt.disconnect();
+                mConnectedGatt.close();
             case R.id.menu_scan:
                 mDevices.clear();
                 //start();
                 startScan();
+                Log.i(TAG, "onOptionsItemSelected: Scan Button selected");
                 return true;
                 default:
                     BluetoothDevice device = mDevices.get(item.getItemId());
@@ -148,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private void startScan() {
         // Stops scanning after 2,5 seconds.
-        final long SCAN_PERIOD = 10000;
+        final long SCAN_PERIOD = 2500;
         Log.i(TAG, "startScan: ");
 
 
@@ -178,10 +187,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onPause() {
         super.onPause();
-
+        Log.i(TAG, "onPause: disconnect from wearable");
+        mConnectedGatt.disconnect();
+        
         //mHandler.removeCallbacks(mStopRunnable);
 
-        stop();
+        //stop();
     }
 
     @Override
@@ -281,62 +292,86 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //characteristic.setValue(255,BluetoothGattCharacteristic.FORMAT_UINT16, 1);
         //characteristic.setValue(16777215,BluetoothGattCharacteristic.FORMAT_UINT16, 1);
         //System.out.println("Value is: " + characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16,1));
-        BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
-        BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
+        // BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
+        //BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
 
-        byte[] array = hexStringToByteArray("0000FF00");
+        byte[] arrayleft = hexStringToByteArray("FF000000");
+        byte[] arrayfrontleft = hexStringToByteArray("00FF0000");
+        byte[] arrayfrontright = hexStringToByteArray("0000FF00");
+        byte[] arrayright = hexStringToByteArray("000000FF"); //broken one
+        byte[] arrayoff = hexStringToByteArray("00000000");
+        /*
         byte[] array1 = {(byte)0x00, (byte)0x00, (byte)0xFF, (byte)0x00};
         byte[] array0 = {(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00};
-
+        */
 
         //System.out.println("Value is: " + characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16,1));
         //System.out.println("Value 1 is " + characteristic.getValue().toString());
 
-        String where = "NW";
 
 
-        if (mAzimuth >= 350 || mAzimuth <= 10) {
-            where = "N";
-            characteristic.setValue(array);
-            mConnectedGatt.writeCharacteristic(characteristic);
+
+        if (mAzimuth >= 350 || mAzimuth <= 10) { //vorne links
+            if (where.equals("N") == false) {
+                System.out.println(where);
+                characteristic.setValue(arrayfrontleft);
+                mConnectedGatt.writeCharacteristic(characteristic);
+                where = "N";
+            }
+            System.out.println("where already on North");
+            //where = "N";
         }
 
             //characteristic.setValue(array);
         if (mAzimuth < 350 && mAzimuth > 280) {
+            if (!where.equals("NW")) {
+                characteristic.setValue(arrayoff);
+                mConnectedGatt.writeCharacteristic(characteristic);
+            }
             where = "NW";
-            characteristic.setValue(array0);
-            mConnectedGatt.writeCharacteristic(characteristic);
         }
-        if (mAzimuth <= 280 && mAzimuth > 260) {
+        if (mAzimuth <= 280 && mAzimuth > 260) { //vorne Rechts vibrieren
+            if (!where.equals("W")) {
+                characteristic.setValue(arrayfrontright);
+                mConnectedGatt.writeCharacteristic(characteristic);
+            }
             where = "W";
-            characteristic.setValue(array0);
-            mConnectedGatt.writeCharacteristic(characteristic);
         }
         if (mAzimuth <= 260 && mAzimuth > 190) {
+            if (!where.equals("SW")) {
+                characteristic.setValue(arrayoff);
+                mConnectedGatt.writeCharacteristic(characteristic);
+            }
             where = "SW";
-            characteristic.setValue(array0);
-            mConnectedGatt.writeCharacteristic(characteristic);
         }
-        if (mAzimuth <= 190 && mAzimuth > 170) {
+        if (mAzimuth <= 190 && mAzimuth > 170) { //Rechts vibrieren
+            if (!where.equals("S")) {
+                characteristic.setValue(arrayright);
+                mConnectedGatt.writeCharacteristic(characteristic);
+            }
             where = "S";
-            characteristic.setValue(array0);
-            mConnectedGatt.writeCharacteristic(characteristic);
         }
 
         if (mAzimuth <= 170 && mAzimuth > 100) {
+            if (!where.equals("SE")) {
+                characteristic.setValue(arrayoff);
+                mConnectedGatt.writeCharacteristic(characteristic);
+            }
             where = "SE";
-            characteristic.setValue(array0);
-            mConnectedGatt.writeCharacteristic(characteristic);
         }
-        if (mAzimuth <= 100 && mAzimuth > 80) {
+        if (mAzimuth <= 100 && mAzimuth > 80) { //links vibrieren
+            if (!where.equals("E")) {
+                characteristic.setValue(arrayleft);
+                mConnectedGatt.writeCharacteristic(characteristic);
+            }
             where = "E";
-            characteristic.setValue(array0);
-            mConnectedGatt.writeCharacteristic(characteristic);
         }
         if (mAzimuth <= 80 && mAzimuth > 10)  {
+            if (!where.equals("NE")) {
+                characteristic.setValue(arrayoff);
+                mConnectedGatt.writeCharacteristic(characteristic);
+            }
             where = "NE";
-            characteristic.setValue(array0);
-            mConnectedGatt.writeCharacteristic(characteristic);
         }
 
 
@@ -399,6 +434,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.i(TAG, "Services successful discovered");
                 start();
+                service = mConnectedGatt.getService(VIBRATION_SERVICE);
+                characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
             }
         }
 

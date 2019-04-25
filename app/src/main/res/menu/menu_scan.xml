@@ -3,6 +3,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/menu_disconnect"
+        android:title="DISCONNECT"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/menu_scan"
         android:title="Scan"
         app:showAsAction="ifRoom" />
