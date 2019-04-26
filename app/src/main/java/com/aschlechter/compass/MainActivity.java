@@ -1,17 +1,14 @@
 package com.aschlechter.compass;
 
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.le.ScanFilter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -21,22 +18,16 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Handler;
-import android.os.ParcelUuid;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener, BluetoothAdapter.LeScanCallback {
@@ -48,8 +39,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final UUID VIBRATION_CHARACTERISTIC = UUID.fromString("713d0003-503e-4c75-ba94-3148f18d941e");
     private static final int REQUEST_ENABLE_BT = 1;
     private static final String TECO_WEARABLE_2 = "EF:EA:F0:C2:F5:5E";
-    public static final int STATE_CONNECTED = 2;
-    public static final int STATE_DISCONNECTED = 0;
+    byte[] arrayleft = hexStringToByteArray("FF000000");
+    byte[] arrayLeftRight = hexStringToByteArray("AA0000AA");
+    byte[] arrayLeftFrontleft = hexStringToByteArray("AAAA0000");
+    byte[] arrayFrontleft = hexStringToByteArray("00FF0000");
+    byte[] arrayFrontleftFrontright = hexStringToByteArray("00AAAA00");
+    byte[] arrayFrontright = hexStringToByteArray("0000FF00");
+    byte[] arrayFrontrightRight = hexStringToByteArray("0000AAAA");
+    byte[] arrayright = hexStringToByteArray("000000FF"); //broken one
+    byte[] arrayoff = hexStringToByteArray("00000000");
 
 
     private BluetoothAdapter bluetoothAdapter;
@@ -58,6 +56,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private BluetoothGatt mConnectedGatt;
     private BluetoothGattService service;
     private BluetoothGattCharacteristic characteristic;
+    String tempwhere = "";
+    private String where = "";
 
 
     //private ProgressDialog mProgress;
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float[] mLastMagnetometer = new float[3];
     private boolean mLastAccelerometerSet = false;
     private boolean mLastMagnetometerSet = false;
-    private String where = "";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,8 +124,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_disconnect:
-                mConnectedGatt.disconnect();
-                mConnectedGatt.close();
+                if (mConnectedGatt != null) {
+                    mConnectedGatt.disconnect();
+                    mConnectedGatt.close();
+                    Log.i(TAG, "onPause: disconnect from wearable");
+                    Toast.makeText(getApplicationContext(),"Disconnected from TECO Wearable" , Toast.LENGTH_LONG).show();
+                }
             case R.id.menu_scan:
                 mDevices.clear();
                 //start();
@@ -187,8 +191,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onPause() {
         super.onPause();
-        Log.i(TAG, "onPause: disconnect from wearable");
-        mConnectedGatt.disconnect();
+        if (mConnectedGatt != null) {
+            Log.i(TAG, "onPause: disconnect from wearable");
+            mConnectedGatt.disconnect();
+            mConnectedGatt.close();
+        }
         
         //mHandler.removeCallbacks(mStopRunnable);
 
@@ -211,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Toast.makeText(this, "No LE Support", Toast.LENGTH_SHORT);
         }
 
-        //start();
+        start();
     }
 
     private void start() {
@@ -295,11 +302,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // BluetoothGattService service = mConnectedGatt.getService(VIBRATION_SERVICE);
         //BluetoothGattCharacteristic characteristic = service.getCharacteristic(VIBRATION_CHARACTERISTIC);
 
-        byte[] arrayleft = hexStringToByteArray("FF000000");
-        byte[] arrayfrontleft = hexStringToByteArray("00FF0000");
-        byte[] arrayfrontright = hexStringToByteArray("0000FF00");
-        byte[] arrayright = hexStringToByteArray("000000FF"); //broken one
-        byte[] arrayoff = hexStringToByteArray("00000000");
+
         /*
         byte[] array1 = {(byte)0x00, (byte)0x00, (byte)0xFF, (byte)0x00};
         byte[] array0 = {(byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00};
@@ -309,73 +312,86 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //System.out.println("Value 1 is " + characteristic.getValue().toString());
 
 
+        if (characteristic != null && mConnectedGatt != null) {
+            tempwhere = where;
 
-
-        if (mAzimuth >= 350 || mAzimuth <= 10) { //vorne links
-            if (where.equals("N") == false) {
-                System.out.println(where);
-                characteristic.setValue(arrayfrontleft);
-                mConnectedGatt.writeCharacteristic(characteristic);
+            if (mAzimuth >= 350 || mAzimuth <= 10) { //vorne links
+                characteristic.setValue(arrayFrontleft);
+                //mConnectedGatt.writeCharacteristic(characteristic);
                 where = "N";
+                Log.i(TAG, "onSensorChanged: King in the North");
+                //where = "N";
             }
-            System.out.println("where already on North");
-            //where = "N";
-        }
 
             //characteristic.setValue(array);
-        if (mAzimuth < 350 && mAzimuth > 280) {
-            if (!where.equals("NW")) {
-                characteristic.setValue(arrayoff);
-                mConnectedGatt.writeCharacteristic(characteristic);
+            if (mAzimuth < 350 && mAzimuth > 280) {
+                characteristic.setValue(arrayLeftFrontleft);
+                //mConnectedGatt.writeCharacteristic(characteristic);
+                where = "NW";
             }
-            where = "NW";
-        }
-        if (mAzimuth <= 280 && mAzimuth > 260) { //vorne Rechts vibrieren
-            if (!where.equals("W")) {
-                characteristic.setValue(arrayfrontright);
-                mConnectedGatt.writeCharacteristic(characteristic);
-            }
-            where = "W";
-        }
-        if (mAzimuth <= 260 && mAzimuth > 190) {
-            if (!where.equals("SW")) {
-                characteristic.setValue(arrayoff);
-                mConnectedGatt.writeCharacteristic(characteristic);
-            }
-            where = "SW";
-        }
-        if (mAzimuth <= 190 && mAzimuth > 170) { //Rechts vibrieren
-            if (!where.equals("S")) {
-                characteristic.setValue(arrayright);
-                mConnectedGatt.writeCharacteristic(characteristic);
-            }
-            where = "S";
-        }
-
-        if (mAzimuth <= 170 && mAzimuth > 100) {
-            if (!where.equals("SE")) {
-                characteristic.setValue(arrayoff);
-                mConnectedGatt.writeCharacteristic(characteristic);
-            }
-            where = "SE";
-        }
-        if (mAzimuth <= 100 && mAzimuth > 80) { //links vibrieren
-            if (!where.equals("E")) {
+            if (mAzimuth <= 280 && mAzimuth > 260) {
                 characteristic.setValue(arrayleft);
+                where = "W";
+            }
+            if (mAzimuth <= 260 && mAzimuth > 190) {
+                characteristic.setValue(arrayLeftRight);
+                where = "SW";
+            }
+            if (mAzimuth <= 190 && mAzimuth > 170) { //Rechts vibrieren
+                characteristic.setValue(arrayright);
+                where = "S";
+            }
+
+            if (mAzimuth <= 170 && mAzimuth > 100) {
+                characteristic.setValue(arrayFrontrightRight);
+                where = "SE";
+            }
+            if (mAzimuth <= 100 && mAzimuth > 80) { //links vibrieren
+                characteristic.setValue(arrayFrontright);
+                where = "E";
+            }
+            if (mAzimuth <= 80 && mAzimuth > 10) {
+                characteristic.setValue(arrayFrontleftFrontright);
+                where = "NE";
+            }
+
+            if (!tempwhere.equals(where)) {
                 mConnectedGatt.writeCharacteristic(characteristic);
             }
-            where = "E";
+            txt_compass.setText(mAzimuth + "° " + where);
+
         }
-        if (mAzimuth <= 80 && mAzimuth > 10)  {
-            if (!where.equals("NE")) {
-                characteristic.setValue(arrayoff);
-                mConnectedGatt.writeCharacteristic(characteristic);
+
+        else {
+            if (mAzimuth >= 350 || mAzimuth <= 10) {
+                Log.i(TAG, "onSensorChanged: King in the North");
+                where = "N";
             }
-            where = "NE";
+            if (mAzimuth < 350 && mAzimuth > 280) {
+                where = "NW";
+            }
+            if (mAzimuth <= 280 && mAzimuth > 260) {
+                where = "W";
+            }
+            if (mAzimuth <= 260 && mAzimuth > 190) {
+                where = "SW";
+            }
+            if (mAzimuth <= 190 && mAzimuth > 170) {
+                where = "S";
+            }
+
+            if (mAzimuth <= 170 && mAzimuth > 100) {
+                where = "SE";
+            }
+            if (mAzimuth <= 100 && mAzimuth > 80) {
+                where = "E";
+            }
+            if (mAzimuth <= 80 && mAzimuth > 10)  {
+                where = "NE";
+            }
+            txt_compass.setText(mAzimuth + "° " + where);
+
         }
-
-
-        txt_compass.setText(mAzimuth + "° " + where);
 
     }
 
@@ -411,8 +427,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Log.d(TAG, "onConnectionStateChange: Status changed " + newState);
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 Log.i(TAG, "Connected to GATT server.");
+                runOnUiThread(new Runnable(){
+                    public void run() {
+                        Toast.makeText(getApplicationContext(),"Connected to TECO Wearable" , Toast.LENGTH_LONG).show();
+                    }
+                });
+
+
+
                 Log.i(TAG, "Attempting to start service discovery:");
                 mConnectedGatt.discoverServices();
+
 
 
                 if (mConnectedGatt != null) {
