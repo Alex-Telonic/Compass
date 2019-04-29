@@ -450,6 +450,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.i(TAG, "Disconnected from GATT server.");
                 stop();
+                runOnUiThread(new Runnable(){
+                    public void run() {
+                        Toast.makeText(getApplicationContext(),"Disconnected from TECO Wearable" , Toast.LENGTH_LONG).show();
+                    }
+                });
             }
 
         }
