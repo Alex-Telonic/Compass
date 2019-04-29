@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final UUID VIBRATION_CHARACTERISTIC = UUID.fromString("713d0003-503e-4c75-ba94-3148f18d941e");
     private static final int REQUEST_ENABLE_BT = 1;
     private static final String TECO_WEARABLE_2 = "EF:EA:F0:C2:F5:5E";
+    private static final String TECO_WEARABLE_7 = "F7:A4:5E:88:83:53";
     byte[] arrayleft = hexStringToByteArray("FF000000");
     byte[] arrayLeftRight = hexStringToByteArray("AA0000AA");
     byte[] arrayLeftFrontleft = hexStringToByteArray("AAAA0000");
@@ -125,6 +126,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         switch (item.getItemId()) {
             case R.id.menu_disconnect:
                 if (mConnectedGatt != null) {
+                    characteristic.setValue(arrayoff);
+                    mConnectedGatt.writeCharacteristic(characteristic);
                     mConnectedGatt.disconnect();
                     mConnectedGatt.close();
                     Log.i(TAG, "onPause: disconnect from wearable");
@@ -406,7 +409,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         //Log.i(TAG, "New LE Device: " + device.getName() + " @ " + rssi);
         if (device.getName() != null) {
-            if (device.getAddress().equals(TECO_WEARABLE_2)) {
+            if (device.getAddress().equals(TECO_WEARABLE_2) || device.getAddress().equals(TECO_WEARABLE_7)) {
                 mDevices.put(device.hashCode(), device);
             }
                 //mDevices.put(device.hashCode(), device);
