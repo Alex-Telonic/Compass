@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final int REQUEST_ENABLE_BT = 1;
     private static final String TECO_WEARABLE_2 = "EF:EA:F0:C2:F5:5E";
     private static final String TECO_WEARABLE_7 = "F7:A4:5E:88:83:53";
+    private static final String TECO_WEARABLE_4 = "C9:F7:C0:1A:FA:15";
     byte[] arrayleft = hexStringToByteArray("FF000000");
     byte[] arrayLeftRight = hexStringToByteArray("AA0000AA");
     byte[] arrayLeftFrontleft = hexStringToByteArray("AAAA0000");
@@ -409,7 +410,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         //Log.i(TAG, "New LE Device: " + device.getName() + " @ " + rssi);
         if (device.getName() != null) {
-            if (device.getAddress().equals(TECO_WEARABLE_2) || device.getAddress().equals(TECO_WEARABLE_7)) {
+            if (device.getAddress().equals(TECO_WEARABLE_2) || device.getAddress().equals(TECO_WEARABLE_7) || device.getAddress().equals(TECO_WEARABLE_4) ) {
                 mDevices.put(device.hashCode(), device);
             }
                 //mDevices.put(device.hashCode(), device);
